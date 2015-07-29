@@ -2,24 +2,58 @@
 <html>
 <head>
   <meta http-equiv='Content-type' content='text/html; charset=utf-8'>
-  <title>Basic Example with JSX</title>
+  <title>Dasher</title>
   <script src="./build/shared/underscore.js"></script>
+  <style type='text/css'>
+  table{
+    width:100%;
+  }
+  td{
+    border:1px solid #333;
+  }
+  table input{
+    width:100%;
+  }
+  div.wrapper{
+    padding:0;
+    margin:2px 6px 2px 2px;
+    border:0;
+  }
+  thead{
+    cursor:pointer;
+  }
 
+  </style>
 </head>
 <body>
-  <h1>Basic Example with JSX</h1>
+
   <div id="container"> </div>
   <script src="./build/react.js"></script>
   <script src="./build/JSXTransformer.js"></script>
   <script type="text/jsx">
-      /** @jsx React.DOM */
+    /** @jsx React.DOM */
 
 // TableSorter Config
 var CONFIG = {
-  sort: { column: "name", order: "desc" },
+  sort: { column: "battery", order: "asc" },
   columns: {
     name: { name: "name", filterText: "", defaultSortOrder: "desc"},
-    age: { name: "age", filterText: ">= 30", defaultSortOrder: "desc"}
+    altitude: { name: "altitude", filterText: "", defaultSortOrder: "desc"},
+    battery: { name: "battery", filterText: "", defaultSortOrder: "desc"},
+    memory: { name: "memory", filterText: "", defaultSortOrder: "desc"}
+  }
+};
+
+var mock = {
+  dove : function(){
+    var cons = ('bcdfghjklmnpqrstvwxz').split("");
+    var vows = ('aeiouy').split("");
+    return {
+      name: (_.sample(cons)).toUpperCase() + _.sample(vows) + _.sample(cons) + _.sample(vows) + _.sample(cons),
+      altitude: 200+(Math.random()*100),
+      battery: (Math.floor(Math.random()*100)) + "%",
+      memory:  (Math.floor(Math.random()*100)) + "%"
+    }
   }
 };
 
@@ -60,21 +94,21 @@ var TableSorter = React.createClass({
     }.bind(this)).fail(function(error, a, b) {
       console.log("Error loading JSON");
     });
-    */
+*/
 
-    var data = [];
-    for (var i=0;i<100;i++){
-      data.push({name:"bill",age:Math.random()*1000});
-    }
-  
-    this.setState({items:data});
+var data = [];
+for (var i=0;i<100;i++){
+  data.push(mock.dove());
+}
+
+this.setState({items:data});
 
 
-  },
-  handleFilterTextChange: function(column) {
-    return function(newValue) {
-      var obj = this.state.columns;
-      obj[column].filterText = newValue;
+},
+handleFilterTextChange: function(column) {
+  return function(newValue) {
+    var obj = this.state.columns;
+    obj[column].filterText = newValue;
 
       // Since we have already mutated the state, just call forceUpdate().
       // Ideally we'd copy and setState or use an immutable data structure.
@@ -82,38 +116,38 @@ var TableSorter = React.createClass({
     }.bind(this);
   },
   columnNames: function() {
-     return Object.keys(this.state.columns); 
-  },
-  sortColumn: function(column) {
-    return function(event) {
-      var newSortOrder = (this.state.sort.order == "asc") ? "desc" : "asc";
+   return Object.keys(this.state.columns); 
+ },
+ sortColumn: function(column) {
+  return function(event) {
+    var newSortOrder = (this.state.sort.order == "asc") ? "desc" : "asc";
 
-      if (this.state.sort.column != column) {
-          newSortOrder = this.state.columns[column].defaultSortOrder;
-      }
+    if (this.state.sort.column != column) {
+      newSortOrder = this.state.columns[column].defaultSortOrder;
+    }
 
-      this.setState({sort: { column: column, order: newSortOrder }});
-    }.bind(this);
-  },
-  sortClass: function(column) {
-    var ascOrDesc = (this.state.sort.order == "asc") ? "headerSortAsc" : "headerSortDesc";
-    return (this.state.sort.column == column) ? ascOrDesc : "";
-  },
-  render: function() {
-    var rows = [];
+    this.setState({sort: { column: column, order: newSortOrder }});
+  }.bind(this);
+},
+sortClass: function(column) {
+  var ascOrDesc = (this.state.sort.order == "asc") ? "headerSortAsc" : "headerSortDesc";
+  return (this.state.sort.column == column) ? ascOrDesc : "";
+},
+render: function() {
+  var rows = [];
 
-    var columnNames = this.columnNames();
-    var filters = {};
+  var columnNames = this.columnNames();
+  var filters = {};
 
-    var operandRegex = /^((?:(?:[<>]=?)|==))\s?([-]?\d+(?:\.\d+)?)$/;
+  var operandRegex = /^((?:(?:[<>]=?)|==))\s?([-]?\d+(?:\.\d+)?)$/;
 
-    columnNames.forEach(function(column) {
-      var filterText = this.state.columns[column].filterText;
-      filters[column] = null;
+  columnNames.forEach(function(column) {
+    var filterText = this.state.columns[column].filterText;
+    filters[column] = null;
 
-      if (filterText.length > 0) { 
-        operandMatch = operandRegex.exec(filterText);
-        if (operandMatch && operandMatch.length == 3) {
+    if (filterText.length > 0) { 
+      operandMatch = operandRegex.exec(filterText);
+      if (operandMatch && operandMatch.length == 3) {
           //filters[column] = Function.apply(null, ["x", "return x " + operandMatch[1] + " " + operandMatch[2]]);
           filters[column] = function(match) { return function(x) { return operators[match[1]](x, match[2]); }; }(operandMatch); 
         } else {
@@ -123,86 +157,86 @@ var TableSorter = React.createClass({
         }
       }
     }, this);
-    
-    var filteredItems = _.filter(this.state.items, function(item) {
-      return _.every(columnNames, function(c) {
-        return (!filters[c] || filters[c](item[c]));
-      }, this);
+
+  var filteredItems = _.filter(this.state.items, function(item) {
+    return _.every(columnNames, function(c) {
+      return (!filters[c] || filters[c](item[c]));
     }, this);
+  }, this);
 
-    var sortedItems = _.sortBy(filteredItems, this.state.sort.column);
-    if (this.state.sort.order === "desc") sortedItems.reverse();
+  var sortedItems = _.sortBy(filteredItems, this.state.sort.column);
+  if (this.state.sort.order === "desc") sortedItems.reverse();
 
-    var headerExtra = function() {
-      return columnNames.map(function(c) {
-        return <th className="header-extra">{this.state.columns[c].name}</th>;
-      }, this);   
-    }.bind(this);
+  var headerExtra = function() {
+    return columnNames.map(function(c) {
+      return <th className="header-extra">{this.state.columns[c].name}</th>;
+    }, this);   
+  }.bind(this);
 
-    var cell = function(x) {
-      return columnNames.map(function(c) {
-        return <td>{x[c]}</td>;
-      }, this);
-    }.bind(this);
+  var cell = function(x) {
+    return columnNames.map(function(c) {
+      return <td>{x[c]}</td>;
+    }, this);
+  }.bind(this);
 
-    sortedItems.forEach(function(item, idx) {
-      var headerRepeat = parseInt(this.props.headerRepeat, 10);
-      if ((this.props.headerRepeat > 0) && 
-          (idx > 0) &&
-          (idx % this.props.headerRepeat === 0)) {
+  sortedItems.forEach(function(item, idx) {
+    var headerRepeat = parseInt(this.props.headerRepeat, 10);
+    if ((this.props.headerRepeat > 0) && 
+      (idx > 0) &&
+      (idx % this.props.headerRepeat === 0)) {
 
-          rows.push (
-            <tr>
-              { headerExtra() }
-            </tr>
-          )
-      }
-
-      rows.push(
-        <tr key={item.id}>
-          { cell(item) }
+      rows.push (
+        <tr>
+          { headerExtra() }
         </tr>
-      );
-    }.bind(this));
-
-    var filterLink = function(column) {
-      return {
-        value: this.state.columns[column].filterText,
-        requestChange: this.handleFilterTextChange(column)
-      };
-    }.bind(this);
-
-    var header = columnNames.map(function(c) {
-      return <th onClick={this.sortColumn(c)} className={"header " + this.sortClass(c)}>{this.state.columns[c].name}</th>;
-    }, this);
-
-    var filterInputs = columnNames.map(function(c) {
-      return <td><input type="text" valueLink={filterLink(c)} /></td>;
-    }, this);
-
-    return (
-      <table cellSpacing="0" className="tablesorter">
-        <thead>
-          <tr>
-            { header }
-          </tr>
-          <tr>
-            { filterInputs }
-          </tr>
-        </thead>
-        <tbody>
-          { rows }
-        </tbody>
-      </table>
-    );
+        )
   }
+
+  rows.push(
+    <tr key={item.id}>
+      { cell(item) }
+    </tr>
+    );
+}.bind(this));
+
+  var filterLink = function(column) {
+    return {
+      value: this.state.columns[column].filterText,
+      requestChange: this.handleFilterTextChange(column)
+    };
+  }.bind(this);
+
+  var header = columnNames.map(function(c) {
+    return <th onClick={this.sortColumn(c)} className={"header " + this.sortClass(c)}>{this.state.columns[c].name}</th>;
+  }, this);
+
+  var filterInputs = columnNames.map(function(c) {
+    return <td><div className='wrapper'><input type="text" valueLink={filterLink(c)} /></div></td>;
+  }, this);
+
+  return (
+    <table cellSpacing="0" className="tablesorter">
+      <thead>
+        <tr>
+          { header }
+        </tr>
+        <tr>
+          { filterInputs }
+        </tr>
+      </thead>
+      <tbody>
+        { rows }
+      </tbody>
+    </table>
+    );
+}
 });
 
 /* Here we create a two selects to control the remote data source of the 
  * TableSorter component. The purpose of this is to show how to control a 
  * component with another component.
  */
-var DataSourceSelectors = React.createClass({
+ var DataSourceSelectors = React.createClass({
   handleSourceChange: function(event) {
     this.props.onSourceChange({
       source: event.target.value,
@@ -230,11 +264,11 @@ var DataSourceSelectors = React.createClass({
           <option value="200">200</option>
         </select>
       </div>
-    );
+      );
   }
 });
 
-function urlForDataSource(source) {
+ function urlForDataSource(source) {
   return "json/" + source.source + "_" + source.limit + ".json";
 }
 
@@ -249,13 +283,13 @@ var App = React.createClass({
     return (
       <div>
         <DataSourceSelectors onSourceChange={this.handleSourceChange} source={this.state.source} />
-        <TableSorter dataSource={urlForDataSource(this.state.source)} config={CONFIG} headerRepeat="5" />
+        <TableSorter dataSource={urlForDataSource(this.state.source)} config={CONFIG} headerRepeat="30" />
       </div>
-    );
+      );
   }
 });
 
 React.renderComponent(<App />, document.getElementById("container"));
-     </script>
-   </body>
-   </html>
+</script>
+</body>
+</html>
