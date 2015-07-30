@@ -3,31 +3,42 @@
 <head>
   <meta http-equiv='Content-type' content='text/html; charset=utf-8'>
   <title>Dasher</title>
+  <script src="./build/jquery.min.js"></script>
   <script src="./build/shared/underscore.js"></script>
+  <script type='text/javascript' src='./build/bootstrap/js/bootstrap.min.js'></script>
+  <link href='./build/bootstrap/css/bootstrap.min.css' rel='stylesheet' type='text/css' />
+
   <style type='text/css'>
-  table{
+  table.react-datatable{
     width:100%;
   }
-  td{
-    border:1px solid #333;
+  table.react-datatable td{
+    border:1px solid #aaa;
+    padding:5px;
   }
-  table input{
+  table.react-datatable input{
     width:100%;
   }
-  div.wrapper{
+  table.react-datatable div.wrapper{
     padding:0;
-    margin:2px 6px 2px 2px;
     border:0;
   }
-  thead{
+  table.react-datatable thead{
     cursor:pointer;
+  }
+
+  div#react-app div.color-cell{
+    display:inline;
+    border:0px;
+    margin:5px;
+    padding:10px;
   }
 
   </style>
 </head>
 <body>
 
-  <div id="container"> </div>
+<div class='container' id='react-app'></div>
   <script src="./build/react.js"></script>
   <script src="./build/JSXTransformer.js"></script>
   <script type="text/jsx">
@@ -39,21 +50,31 @@ var CONFIG = {
   columns: {
     name: { name: "name", filterText: "", defaultSortOrder: "desc"},
     altitude: { name: "altitude", filterText: "", defaultSortOrder: "desc"},
-    battery: { name: "battery", filterText: "", defaultSortOrder: "desc"},
-    memory: { name: "memory", filterText: "", defaultSortOrder: "desc"}
+    battery: { name: "battery (%)", filterText: "", defaultSortOrder: "desc"},
+    memory: { name: "memory (%)", filterText: "", defaultSortOrder: "desc"}
   }
 };
 
 var mock = {
-  dove : function(){
+  dove : function(x){
+    if (x===undefined){x=1;}
+
     var cons = ('bcdfghjklmnpqrstvwxz').split("");
     var vows = ('aeiouy').split("");
-    return {
-      name: (_.sample(cons)).toUpperCase() + _.sample(vows) + _.sample(cons) + _.sample(vows) + _.sample(cons),
-      altitude: 200+(Math.random()*100),
-      battery: (Math.floor(Math.random()*100)) + "%",
-      memory:  (Math.floor(Math.random()*100)) + "%"
+    var doves = [];
+
+    for (var i=0;i<x;i++){
+      doves.push(
+        {
+          name: (_.sample(cons)).toUpperCase() + _.sample(vows) + _.sample(cons) + _.sample(vows) + _.sample(cons),
+          altitude: 200+(Math.random()*100),
+          battery: Math.floor(Math.random()*100),
+          memory:  Math.floor(Math.random()*100)
+        }
+      );
     }
+
+    return doves;
   }
 };
 
@@ -70,7 +91,7 @@ var operators = {
 var TableSorter = React.createClass({
   getInitialState: function() {
     return {
-      items: this.props.initialItems || [],
+      items: this.props.gridData || [],
       sort: this.props.config.sort || { column: "", order: "" },
       columns: this.props.config.columns
     };
@@ -82,7 +103,7 @@ var TableSorter = React.createClass({
     }
   },
   componentWillMount: function() {
-    this.loadData(this.props.dataSource);
+    //this.loadData(this.props.dataSource);
   },
   loadData: function(dataSource) {
     if (!dataSource) return;
@@ -96,13 +117,8 @@ var TableSorter = React.createClass({
     });
 */
 
-var data = [];
-for (var i=0;i<100;i++){
-  data.push(mock.dove());
-}
 
-this.setState({items:data});
-
+    //this.setState({items:mock.dove(100)});
 
 },
 handleFilterTextChange: function(column) {
@@ -175,7 +191,7 @@ render: function() {
 
   var cell = function(x) {
     return columnNames.map(function(c) {
-      return <td>{x[c]}</td>;
+      return <td >{x[c]}</td>;
     }, this);
   }.bind(this);
 
@@ -215,7 +231,8 @@ render: function() {
   }, this);
 
   return (
-    <table cellSpacing="0" className="tablesorter">
+    <div className='col-md-6'>
+    <table cellSpacing="0" className="tablesorter" className="react-datatable">
       <thead>
         <tr>
           { header }
@@ -228,6 +245,7 @@ render: function() {
         { rows }
       </tbody>
     </table>
+    </div>
     );
 }
 });
@@ -270,26 +288,53 @@ render: function() {
 
  function urlForDataSource(source) {
   return "json/" + source.source + "_" + source.limit + ".json";
-}
+};
+
+var ColorCells = React.createClass({
+  getInitialState: function(){
+    return {cells: this.props.gridData}
+  },
+
+  render: function(){
+
+    var cells = this.state.cells.map(function(cell, cellID){
+      var classNames = ["color-cell"];
+      var style = {background:"rgb("+Math.floor((255*cell.battery)/100)+","+Math.floor((255*cell.memory)/100)+","+(0)+")"};
+      console.log(style);
+      return (<div className={classNames.join(" ")} style={style} key={cellID}> </div> );
+    });
+
+    return (
+        <div className='color-cells col-md-6'>
+          {cells}
+        </div>
+      )
+  }
+
+});
 
 var App = React.createClass({
   getInitialState: function() {
-    return {source: {limit: "200", source: "source1"}};
+    return {
+      source: {limit: "200", source: "source1"},
+      gridData: mock.dove(100)
+    };
+
   },
   handleSourceChange: function(source) {
     this.setState({source: source});
   },
   render: function() {
     return (
-      <div>
-        <DataSourceSelectors onSourceChange={this.handleSourceChange} source={this.state.source} />
-        <TableSorter dataSource={urlForDataSource(this.state.source)} config={CONFIG} headerRepeat="30" />
+      <div className='row'>
+        <TableSorter dataSource={urlForDataSource(this.state.source)} gridData={this.state.gridData} config={CONFIG} headerRepeat="30" />
+        <ColorCells gridData={this.state.gridData} />
       </div>
       );
   }
 });
 
-React.renderComponent(<App />, document.getElementById("container"));
+React.renderComponent(<App />, document.getElementById("react-app"));
 </script>
 </body>
 </html>
